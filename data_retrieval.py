@@ -9,7 +9,6 @@ from time import sleep
 if __name__ == '__main__':
     print('Dont use this module by itself cause it dont work properly')
 
-
 def driversetup():
     '''Set up the driver for the browser for selenium'''
     driver = webdriver.Edge(options=EdgeOptions())
@@ -35,7 +34,7 @@ def getlineup(driver, lp, state):
     '''ptab Turns the table into a panda dataframe for 'easier' manipulation. lines Is the dataframe now as a list of lists'''
     ptab = pd.read_html(str(table))[0]
     lines = ptab.values.tolist()
-    print(lines)
+    # print(lines)
     '''This block until the end of the loop does a few things, and it does not do them well.
     The loop iterates over the lines list-of-lists that was the ptab dataframe; each line is a line.
     It then appends each element (player) of the line into the result list, then appends an empty element twice to create a visual seperation.
@@ -47,12 +46,13 @@ def getlineup(driver, lp, state):
     for line in lines:
         result = []
         for e in line:
-            result.append(re.split(':', e)[-1].strip())
+            result.append(re.sub(r'[^a-zA-Z0-9\s]', '', re.sub(r'\s+', ' ', string=re.sub(r'[^a-zA-Z0-9]', ' ', re.split(':', e)[-1].strip()))))
+
         lineup.append(result)
 
     '''This turns the new lineup list of lists back into a panda df. then it is exported to a csv file'''
     Lineup = pd.DataFrame(lineup)
-    # print(Lineup)
+    print(Lineup)
 
     return Lineup
 
@@ -62,16 +62,15 @@ def getroster(driver, rp, Lineup):
     # driver.get('https://cornellbigred.com/sports/mens-ice-hockey/roster')
     # driver.get('https://gobobcats.com/sports/mens-ice-hockey/roster')
 
-    ros = BeautifulSoup(driver.page_source, 'html.parser').find_all('div',
-                                                                    class_='sidearm-roster-player-pertinents flex-item-1 column')
+    ros = BeautifulSoup(driver.page_source, 'html.parser').find_all('div', class_='sidearm-roster-player-pertinents flex-item-1 column')
 
     roster = []
 
     for player in ros:
         # namelist = player.contents[3].contents[4].text.split()
         # roster.append(namelist[0].strip() + " " + namelist[1].strip())
-        roster.append(re.sub(r'[^a-zA-Z0-9\s]', '', player.contents[3].contents[4].text).strip())
-        print(re.sub(r'[^a-zA-Z0-9\s]', '', player.contents[3].contents[4].text).strip())
+        roster.append(re.sub(r'[^a-zA-Z0-9\s]', '', re.sub(r'\s+', ' ', string=player.contents[3].contents[4].text).strip()))
+        # print(re.sub(r'[^a-zA-Z0-9]', ' ', player.contents[3].contents[4].text).strip())
 
     playerdict = {}
     masterdict = {}
@@ -81,7 +80,7 @@ def getroster(driver, rp, Lineup):
         for skater in line[1:]:
 
             try:
-                spot = roster.index(re.sub(r'[^a-zA-Z0-9\s]', '', skater))
+                spot = roster.index(re.sub(r'\s+', ' ', re.sub(r'[^a-zA-Z0-9]', ' ', skater)))
             except:
                 print("Player not found in roster: " + str(skater))
 
@@ -127,8 +126,8 @@ def getstats(driver, sp, playerdict, masterdict):
 '''you left off here. need to finish making the functions for this shit. figure out references and what you should make functions. need a masterdict function?'''
 
 
-def make_final_df(masterdict):
-    guys = getlineup().values.tolist()
+def make_final_df(masterdict, lineup):
+    guys = lineup.values.tolist()
     Stuff = []
     for thing in guys:
         result = [thing[0]]
@@ -147,11 +146,8 @@ def make_final_df(masterdict):
 
     return final
 
-
 def export(teamname, final):
-    team = input('Enter Team name: ')
-    return final.to_csv(path_or_buf=str(team) + '.csv', index=False, header=False)
-
+    return final.to_csv(path_or_buf=str(teamname) + '.csv', index=False, header=False)
 
 # need to quit the shit
 driversetup().quit()

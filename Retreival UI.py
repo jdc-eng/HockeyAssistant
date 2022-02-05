@@ -4,17 +4,34 @@ from tkinter import ttk
 import tkinter as tk
 from data_retrieval import *
 
+
+# class App(tk.Tk):
+#     def __init__(self):
+#         super().__init__()
+#         self.title('Tkinter StringVar')
+#         self.geometry("300x80")
+#
+#         self.name_var = tk.StringVar()
+#
+#         self.columnconfigure(0, weight=1)
+#         self.columnconfigure(1, weight=1)
+#         self.columnconfigure(2, weight=1)
+#
+#         self.create_widgets()
+#
+
 root = Tk()
 frm = ttk.Frame(root, padding=10)
 frm.grid()
+
 
 linespage = tk.StringVar()
 rospage = tk.StringVar()
 statpage = tk.StringVar()
 teamname = tk.StringVar()
 
-home = tk.StringVar(value='h')
-away = tk.StringVar(value='v')
+home = tk.StringVar(value='h').get()
+away = tk.StringVar(value='v').get()
 
 def retrieve(state):
     lp = linespage.get()
@@ -24,7 +41,7 @@ def retrieve(state):
     lineup = getlineup(driver=driver, lp=lp, state=state)
     ros = getroster(driver=driver, rp=rp, Lineup=lineup)
     masterdict = getstats(driver=driver, sp=sp, playerdict=ros[0], masterdict=ros[1])
-    final = make_final_df(masterdict=masterdict)
+    final = make_final_df(masterdict=masterdict, lineup=lineup)
     export(teamname=teamname.get(), final=final)
     driversetup().quit()
 
@@ -47,8 +64,6 @@ TeamE = ttk.Entry(frm, textvariable= teamname, font=('calibre',10,'normal')).gri
 
 
 ttk.Label(frm, text="Was this a home or away game for desired team: ").grid(column=0, row=4)
-HomeB = ttk.Button(frm, text="Home", textvariable=home, command=retrieve(state=home)).grid(column=2, row=5)
-AwayB = ttk.Button(frm, text="Away", textvariable=away, command=retrieve(state=away)).grid(column=3, row=5)
+HomeB = ttk.Button(frm, text="Home", command=lambda : retrieve(state=home)).grid(column=2, row=5)
+AwayB = ttk.Button(frm, text="Away", command=lambda : retrieve(state=away)).grid(column=3, row=5)
 root.mainloop()
-
-
