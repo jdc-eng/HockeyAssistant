@@ -1,35 +1,22 @@
-import tkinter as ttk
+
 from tkinter import *
 from tkinter import ttk
 import tkinter as tk
 from data_retrieval import *
 
-
-# class App(tk.Tk):
-#     def __init__(self):
-#         super().__init__()
-#         self.title('Tkinter StringVar')
-#         self.geometry("300x80")
-#
-#         self.name_var = tk.StringVar()
-#
-#         self.columnconfigure(0, weight=1)
-#         self.columnconfigure(1, weight=1)
-#         self.columnconfigure(2, weight=1)
-#
-#         self.create_widgets()
-#
-
+#create the tk shit
 root = Tk()
 frm = ttk.Frame(root, padding=10)
 frm.grid()
+root.title('Hockey Data Assistant')
 
-
+#store all the necessary the webpage links
 linespage = tk.StringVar()
 rospage = tk.StringVar()
 statpage = tk.StringVar()
 teamname = tk.StringVar()
 
+#this is used to pass in home or away game into the function. for selecting proper table from lines page
 home = tk.StringVar(value='h').get()
 away = tk.StringVar(value='v').get()
 
@@ -44,12 +31,9 @@ def retrieve(state):
     final = make_final_df(masterdict=masterdict, lineup=lineup)
     export(teamname=teamname.get(), final=final)
     driversetup().quit()
+    root.quit()
 
-# L1 = ttk.Label(root, text="Lines Webpage:").grid(column=0, row=2)
-# # L1.pack( side = LEFT)
-# E1 = ttk.Entry(root, bd =5).grid(column=1, row=2)
-# # E1.pack(side = RIGHT)
-
+#make all the buttons, inputs etc
 linelabel = ttk.Label(frm, text="Lines Webpage: ").grid(column=0, row=0)
 lineEntry = ttk.Entry(frm, textvariable=linespage, font=('calibre',10,'normal')).grid(column=1, row=0)
 
@@ -62,8 +46,8 @@ StatEntry = ttk.Entry(frm, textvariable=statpage, font=('calibre',10,'normal')).
 TeamL = ttk.Label(frm, text="Team Name: ").grid(column=0, row=3)
 TeamE = ttk.Entry(frm, textvariable= teamname, font=('calibre',10,'normal')).grid(column=1, row=3)
 
-
 ttk.Label(frm, text="Was this a home or away game for desired team: ").grid(column=0, row=4)
 HomeB = ttk.Button(frm, text="Home", command=lambda : retrieve(state=home)).grid(column=2, row=5)
 AwayB = ttk.Button(frm, text="Away", command=lambda : retrieve(state=away)).grid(column=3, row=5)
+
 root.mainloop()
