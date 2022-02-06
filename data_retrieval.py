@@ -1,15 +1,22 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.edge.options import Options as EdgeOptions
+from selenium.webdriver.support.select import Select
 import pandas as pd
 from bs4 import BeautifulSoup
 import re
+import unidecode
 
 if __name__ == '__main__':
     print('Dont use this module by itself cause it dont work properly')
 
+
 def driversetup():
     '''Set up the driver for the browser for selenium'''
+    # options = webdriver.ChromeOptions()
+    # options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    # driver = webdriver.Chrome(options=options)
+    #
     driver = webdriver.Edge(options=EdgeOptions())
     return driver
 
@@ -42,7 +49,7 @@ def getlineup(driver, lp, state):
         result = []
         for e in line:
             #this regex stuff basically remones non-alpha numeric, then gets rid of any extra spaces from the players name and then adds it into the lineup
-            result.append(re.sub(r'[^a-zA-Z0-9\s]', '', re.sub(r'\s+', ' ', string=re.sub(r'[^a-zA-Z0-9]', ' ', re.split(':', e)[-1].strip()))))
+            result.append(re.sub(r'\s+', ' ', string=re.sub(r'[^a-zA-Z0-9\s]', '', string=unidecode.unidecode(re.split(':', e)[-1].strip()))))
 
         lineup.append(result)
 
@@ -55,6 +62,9 @@ def getlineup(driver, lp, state):
 def getroster(driver, rp, Lineup):
     driver.get(rp) #get request for the roster webpage
 
+    Select(driver.find_element(By.XPATH, '//*[@id="sidearm-roster-select-template-dropdown"]')).select_by_visible_text('Roster View - List')
+    driver.find_element(By.XPATH, '//*[@id="sidearm-roster-select-template-button"]').click()
+
     ros = BeautifulSoup(driver.page_source, 'html.parser').find_all('div', class_='sidearm-roster-player-pertinents flex-item-1 column') #this gets the actual players in a list
 
     roster = []
@@ -62,8 +72,8 @@ def getroster(driver, rp, Lineup):
         # this loop/line appends the names of the players that are in the ros player list from the webpage lineup IF AND ONLY IF they are in the lineup DataFrame.
         # This is done because i havent yet looked into a way of searching for a specific string in the ros type list, and if that is good for actually getting the hand data
         # The regex line is funky, basically it removes/sub first all of the non alphanumeric characters from the name, and that is passed into another sub to replace any extra spaces with a single space
-        roster.append(re.sub(r'[^a-zA-Z0-9\s]', '', re.sub(r'\s+', ' ', string=player.contents[3].contents[4].text).strip()))
-
+        roster.append(re.sub(r'\s+', ' ', string=re.sub(r'[^a-zA-Z0-9\s]', '', string=unidecode.unidecode(player.contents[3].contents[4].text.strip()))))
+        # print(re.sub(r'\s+', ' ', string=re.sub(r'[^a-zA-Z0-9\s]', '', string=unidecode.unidecode(player.contents[3].contents[4].text.strip()))))
     # playerdict and masterdict are used for the plus/minus. because the plus minus is gotten by iterating over a table with the numbers and the final thig is made with the number as the dict key, there needs to be a dictionary of number to name to add the plus minus. see line 11 2
     playerdict = {}
     masterdict = {}
@@ -73,7 +83,7 @@ def getroster(driver, rp, Lineup):
         for skater in line[1:]:
 
             try:
-                spot = roster.index(re.sub(r'\s+', ' ', re.sub(r'[^a-zA-Z0-9]', ' ', skater)))
+                spot = roster.index(re.sub(r'\s+', ' ', re.sub(r'[^a-zA-Z0-9\s]', '', unidecode.unidecode(skater))))
             except:
                 print("Player not found in roster: " + str(skater))
 
@@ -132,7 +142,7 @@ def make_final_df(masterdict, lineup):
     return final
 
 def export(teamname, final):
-    return final.to_csv(path_or_buf=str(teamname) + '.csv', index=False, header=False) #export
+    return final.to_csv(path_or_buf=str(teamname) + '.csv', index=False, header=False, ) #export
 
 # need to quit the shit
 driversetup().quit()
