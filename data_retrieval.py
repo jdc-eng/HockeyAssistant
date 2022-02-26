@@ -78,7 +78,7 @@ def getroster(driver, rp, Lineup):
     playerdict = {}
     masterdict = {}
     numbers = []
-    print("checking for active players")
+    # print("checking for active players")
     for line in Lineup.itertuples(index=False):
         for skater in line[1:]:
 
@@ -94,13 +94,15 @@ def getroster(driver, rp, Lineup):
                 continue
 
             try:
-                number = ros[spot].contents[3].contents[1].text.strip()
+                number = ros[spot].contents[3].contents[1].text.strip('\n').strip()
                 numbers.append(number)
             except:
                 print('Wrong index for number. Number not found')
                 continue
             playerdict[number] = skater
             masterdict[skater] = [number, hand, '']
+    # print(playerdict)
+
     return [playerdict, masterdict]
 
 
@@ -112,14 +114,15 @@ def getstats(driver, sp, playerdict, masterdict):
     stattab = BeautifulSoup(driver.page_source, 'html.parser').find_all(id='DataTables_Table_0')[0] #extract the table
 
     ptab2 = pd.read_html(str(stattab), header=None)[0]  #this line gets all the plus minuses
-
-    jerseys = ptab2['#'][0:-3].values.tolist() #make a list of all the jersey numbers on the website
-
+    # print(ptab2)
+    jerseys = ptab2['#'][0:-3].to_numpy().astype(dtype=int).astype(dtype=str).tolist() #make a list of all the jersey numbers on the website
+    # print(jerseys)
     for num in jerseys:
         if num[0] in playerdict:
             # loop through all the jersey nums in the stats table, and only get the plus minus if it is inn the player dictionary
-            pmin = ptab2.loc[(ptab2['#'] == num[0]).iloc[:, 0]]['Shots']['+/-'].values[0]
+            pmin = ptab2.loc[(ptab2['#'] == num[0]).iloc[:, 0]]['Shots']['+/-'].to_numpy()
             masterdict[playerdict[num[0]]][2] = pmin # change the plus minus in the master dict to the players plus minus using the number as a key in playerdict to get their name, and pass that into masterdict to add the plus minus of the player
+            # print(pmin)
     return masterdict
 
 def make_final_df(masterdict, lineup):
