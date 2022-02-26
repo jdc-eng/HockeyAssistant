@@ -1,11 +1,18 @@
+import bs4.dammit
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.edge.options import Options as EdgeOptions
-from selenium.webdriver.support.select import Select
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.expected_conditions import element_to_be_clickable as Clickable
+from selenium.webdriver.support.expected_conditions import visibility_of_element_located as Visible
+
+from lxml import etree
 import pandas as pd
 from bs4 import BeautifulSoup
 import re
 import unidecode
+from time import sleep
 
 if __name__ == '__main__':
     print('Dont use this module by itself cause it dont work properly')
@@ -22,8 +29,8 @@ def driversetup():
 
 
 def getlineup(driver, lp, state):
-    driver.get(lp)  # webpage get request
-
+    # driver.get(lp)  # webpage get request
+    driver.get('https://www.uscho.com/gameday/division-i-men/2021-2022/2022-02-26/game-1697/')
     driver.implicitly_wait(0.5)
 
     # this line finds and clicks on the lines part of the table to turn the aria-hidden to false and we can get the data#
@@ -60,22 +67,28 @@ def getlineup(driver, lp, state):
 
 
 def getroster(driver, rp, Lineup):
-    driver.get(rp) #get request for the roster webpage
+    # driver.get(rp) #get request for the roster webpage
+    driver.get('https://www.eliteprospects.com/team/1551/princeton-univ.'+'?sort=jersey')
+    # Select(driver.find_element(By.XPATH, '//*[@id="sidearm-roster-select-template-dropdown"]')).select_by_visible_text('Roster View - List')
+    # driver.find_element(By.XPATH, '//*[@id="roster"]/div/div[3]/table/thead/tr/th[2]/a').click() #clicks the number thing to sort by jersey num, really to get everyone in one table
 
-    Select(driver.find_element(By.XPATH, '//*[@id="sidearm-roster-select-template-dropdown"]')).select_by_visible_text('Roster View - List')
-    driver.find_element(By.XPATH, '//*[@id="sidearm-roster-select-template-button"]').click()
-
-    ros = BeautifulSoup(driver.page_source, 'html.parser').find_all('div', class_='sidearm-roster-player-pertinents flex-item-1 column') #this gets the actual players in a list
-
+    ros = BeautifulSoup(driver.page_source, 'html.parser').find('table', class_='table table-striped table-sortable roster').find('tbody').find_all('tr') #this gets the actual players in a list
+    # print(ros)
     roster = []
+    playerdict = []
     for player in ros:
         # this loop/line appends the names of the players that are in the ros player list from the webpage lineup IF AND ONLY IF they are in the lineup DataFrame.
         # This is done because i havent yet looked into a way of searching for a specific string in the ros type list, and if that is good for actually getting the hand data
         # The regex line is funky, basically it removes/sub first all of the non alphanumeric characters from the name, and that is passed into another sub to replace any extra spaces with a single space
-        roster.append(re.sub(r'\s+', ' ', string=re.sub(r'[^a-zA-Z0-9\s]', '', string=unidecode.unidecode(player.contents[3].contents[4].text.strip()))))
-        # print(re.sub(r'\s+', ' ', string=re.sub(r'[^a-zA-Z0-9\s]', '', string=unidecode.unidecode(player.contents[3].contents[4].text.strip()))))
+        shortened = re.sub(r'\s+', ' ', string=re.sub(r'[^a-zA-Z0-9\s]', '', string=unidecode.unidecode(player.contents[7].contents[1].text.strip())))
+        playerdict.append(shortened)
+        name = ''
+        for thing in shortened.split()[0:-1]:
+            name = name+' '+thing
+        roster.append(name.strip().lower())
     # playerdict and masterdict are used for the plus/minus. because the plus minus is gotten by iterating over a table with the numbers and the final thig is made with the number as the dict key, there needs to be a dictionary of number to name to add the plus minus. see line 11 2
-    playerdict = {}
+    #     print(player.contents[3].contents[0])
+
     masterdict = {}
     numbers = []
     # print("checking for active players")
@@ -83,46 +96,61 @@ def getroster(driver, rp, Lineup):
         for skater in line[1:]:
 
             try:
-                spot = roster.index(re.sub(r'\s+', ' ', re.sub(r'[^a-zA-Z0-9\s]', '', unidecode.unidecode(skater))))
+                spot = roster.index(re.sub(r'\s+', ' ', re.sub(r'[^a-zA-Z0-9\s]', '', unidecode.unidecode(skater).lower())))
             except:
                 print("Player not found in roster: " + str(skater))
 
             try:
-                hand = ros[spot].contents[1].contents[-2].text.strip()
+                hand = ros[spot].contents[19].contents[-1].text.strip()
             except:
                 print('No player hand found.')
                 continue
 
             try:
-                number = ros[spot].contents[3].contents[1].text.strip('\n').strip()
+                number = re.sub(r'[^a-zA-Z0-9\s]', '', string=ros[spot].contents[3].contents[0].text.strip())
+                print(number)
                 numbers.append(number)
             except:
                 print('Wrong index for number. Number not found')
                 continue
-            playerdict[number] = skater
+            # playerdict[number] = skater
             masterdict[skater] = [number, hand, '']
     # print(playerdict)
 
+    # WebDriverWait(driver, 20).until(Clickable((By.XPATH, '//*[@id="players"]/nav/ul/li[2]/a')))
+    driver.get('https://www.eliteprospects.com/team/1551/princeton-univ.' + '?sort=jersey')
+    driver.find_element(By.XPATH, '//*[@id="players"]/nav/ul/li[2]/a').click()
+    driver.implicitly_wait(5)
+    # webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+
+    driver.find_element(By.XPATH, '//*[@id="dismiss-button"]/div/svg/path[1]').click()
+    driver.find_element(By.XPATH, '//*[@id="dismiss-button"]/div/svg')
+    stattab = BeautifulSoup(driver.page_source, 'html.parser').find_all('div', id='players')  # extract the table
+
+    print(stattab)
+    sleep(20)
     return [playerdict, masterdict]
 
 
 def getstats(driver, sp, playerdict, masterdict):
-    driver.get(sp) #driver init
+    # driver.get(sp) #driver init
+    # driver.get()
+    # driver.find_element(By.XPATH, '//*[@id="players"]/nav/ul/li[2]/a').click() #click on the individua button for player stats
 
-    driver.find_element(By.XPATH, '//*[@id="main-content"]/article/div[3]/header/div/ul/li[2]').click() #click on the individua button for player stats
+    stattab = BeautifulSoup(driver.page_source, 'html.parser').find('table', _class='table table-striped table-sortable skater-stats highlight-stats') #extract the table
 
-    stattab = BeautifulSoup(driver.page_source, 'html.parser').find_all(id='DataTables_Table_0')[0] #extract the table
-
-    ptab2 = pd.read_html(str(stattab), header=None)[0]  #this line gets all the plus minuses
+    # ptab2 = pd.read_html(str(stattab), header=None)[0]  #this line gets all the plus minuses
     # print(ptab2)
-    jerseys = ptab2['#'][0:-3].to_numpy().astype(dtype=int).astype(dtype=str).tolist() #make a list of all the jersey numbers on the website
+    # jerseys = ptab2['#'][0:-3].to_numpy().astype(dtype=int).astype(dtype=str).tolist() #make a list of all the jersey numbers on the website
     # print(jerseys)
-    for num in jerseys:
-        if num[0] in playerdict:
-            # loop through all the jersey nums in the stats table, and only get the plus minus if it is inn the player dictionary
-            pmin = ptab2.loc[(ptab2['#'] == num[0]).iloc[:, 0]]['Shots']['+/-'].to_numpy()
-            masterdict[playerdict[num[0]]][2] = pmin # change the plus minus in the master dict to the players plus minus using the number as a key in playerdict to get their name, and pass that into masterdict to add the plus minus of the player
-            # print(pmin)
+    print(stattab)
+
+    # for player in playerdict:
+    #     if player in playerdict:
+    #         # loop through all the jersey nums in the stats table, and only get the plus minus if it is inn the player dictionary
+    #         pmin = ptab2.loc[(ptab2['#'] == num[0]).iloc[:, 0]]['Shots']['+/-'].to_numpy()
+    #         masterdict[playerdict[num[0]]][2] = pmin # change the plus minus in the master dict to the players plus minus using the number as a key in playerdict to get their name, and pass that into masterdict to add the plus minus of the player
+    #         # print(pmin)
     return masterdict
 
 def make_final_df(masterdict, lineup):
