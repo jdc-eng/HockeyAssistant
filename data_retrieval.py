@@ -76,24 +76,24 @@ def getroster(driver, rp, Lineup):
     ros = BeautifulSoup(driver.page_source, 'html.parser').find('table', class_='table table-striped table-sortable roster').find('tbody').find_all('tr') #this gets the actual players in a list
     # print(ros)
     roster = []
-    playerdict = []
+
     for player in ros:
-        # this loop/line appends the names of the players that are in the ros player list from the webpage lineup IF AND ONLY IF they are in the lineup DataFrame.
-        # This is done because i havent yet looked into a way of searching for a specific string in the ros type list, and if that is good for actually getting the hand data
         # The regex line is funky, basically it removes/sub first all of the non alphanumeric characters from the name, and that is passed into another sub to replace any extra spaces with a single space
         shortened = re.sub(r'\s+', ' ', string=re.sub(r'[^a-zA-Z0-9\s]', '', string=unidecode.unidecode(player.contents[7].contents[1].text.strip())))
-        playerdict.append(shortened)
+        # playerdict.append(shortened)
         name = ''
         for thing in shortened.split()[0:-1]:
             name = name+' '+thing
         roster.append(name.strip().lower())
     # playerdict and masterdict are used for the plus/minus. because the plus minus is gotten by iterating over a table with the numbers and the final thig is made with the number as the dict key, there needs to be a dictionary of number to name to add the plus minus. see line 11 2
     #     print(player.contents[3].contents[0])
-
+    playerdict = {}
     masterdict = {}
     numbers = []
     # print("checking for active players")
     for line in Lineup.itertuples(index=False):
+        # this loop/line appends the names of the players that are in the ros player list from the webpage lineup IF AND ONLY IF they are in the lineup DataFrame.
+        # This is done because i havent yet looked into a way of searching for a specific string in the ros type list, and if that is good for actually getting the hand data
         for skater in line[1:]:
 
             try:
@@ -114,20 +114,27 @@ def getroster(driver, rp, Lineup):
             except:
                 print('Wrong index for number. Number not found')
                 continue
-            # playerdict[number] = skater
+
+            try:
+                EPname = ros[spot].contents[7].contents[1].text.strip()
+            except:
+                print('Prospect name not found in EP.')
+
+            playerdict[EPname] = skater
             masterdict[skater] = [number, hand, '']
-    # print(playerdict)
+    print(playerdict)
 
-    # WebDriverWait(driver, 20).until(Clickable((By.XPATH, '//*[@id="players"]/nav/ul/li[2]/a')))
-    driver.get('https://www.eliteprospects.com/team/1551/princeton-univ.' + '?sort=jersey')
-    driver.find_element(By.CSS_SELECTOR, '#players > nav > ul > li:nth-child(2) > a').click()
-    driver.implicitly_wait(1)
-    # webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+    driver.get('https://www.eliteprospects.com/team/1551/princeton-univ.' + '?tab=stats#players')
+    stattab = BeautifulSoup(driver.page_source, 'html.parser').find('table', class_='table table-striped table-sortable skater-stats highlight-stats').find_all('tr')  # get table of player stats
 
-    stattab = BeautifulSoup(driver.page_source, 'html.parser').find_all('div', id='players')  # extract the table
+    for player in stattab[2:]:
+        SiteName = player.contents[5].contents[1].text
+        print(SiteName)
+        if SiteName in playerdict:
+            masterdict[playerdict[SiteName]][2] = player.contents[17].text.strip()
+            print(player.contents[17].text)  # pm location
+            print(player.contents[5].contents[1].text)  # name location
 
-    print(stattab)
-    sleep(20)
     return [playerdict, masterdict]
 
 
