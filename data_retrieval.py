@@ -1,13 +1,14 @@
-import bs4.dammit
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.edge.options import Options as EdgeOptions
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support.expected_conditions import element_to_be_clickable as Clickable
-from selenium.webdriver.support.expected_conditions import visibility_of_element_located as Visible
 
-from lxml import etree
+####POSSIBLY USELESS SHIT####
+# from selenium.webdriver.support.ui import WebDriverWait
+# from selenium.webdriver.support.expected_conditions import element_to_be_clickable as Clickable
+# from selenium.webdriver.support.expected_conditions import visibility_of_element_located as Visible
+# from lxml import etree
+
 import pandas as pd
 from bs4 import BeautifulSoup
 import re
@@ -119,12 +120,10 @@ def getroster(driver, rp, Lineup):
 
     # WebDriverWait(driver, 20).until(Clickable((By.XPATH, '//*[@id="players"]/nav/ul/li[2]/a')))
     driver.get('https://www.eliteprospects.com/team/1551/princeton-univ.' + '?sort=jersey')
-    driver.find_element(By.XPATH, '//*[@id="players"]/nav/ul/li[2]/a').click()
-    driver.implicitly_wait(5)
+    driver.find_element(By.CSS_SELECTOR, '#players > nav > ul > li:nth-child(2) > a').click()
+    driver.implicitly_wait(1)
     # webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
 
-    driver.find_element(By.XPATH, '//*[@id="dismiss-button"]/div/svg/path[1]').click()
-    driver.find_element(By.XPATH, '//*[@id="dismiss-button"]/div/svg')
     stattab = BeautifulSoup(driver.page_source, 'html.parser').find_all('div', id='players')  # extract the table
 
     print(stattab)
@@ -137,13 +136,13 @@ def getstats(driver, sp, playerdict, masterdict):
     # driver.get()
     # driver.find_element(By.XPATH, '//*[@id="players"]/nav/ul/li[2]/a').click() #click on the individua button for player stats
 
-    stattab = BeautifulSoup(driver.page_source, 'html.parser').find('table', _class='table table-striped table-sortable skater-stats highlight-stats') #extract the table
+    # stattab = BeautifulSoup(driver.page_source, 'html.parser').find('table', _class='table table-striped table-sortable skater-stats highlight-stats') #extract the table
 
     # ptab2 = pd.read_html(str(stattab), header=None)[0]  #this line gets all the plus minuses
     # print(ptab2)
     # jerseys = ptab2['#'][0:-3].to_numpy().astype(dtype=int).astype(dtype=str).tolist() #make a list of all the jersey numbers on the website
     # print(jerseys)
-    print(stattab)
+    # print(stattab)
 
     # for player in playerdict:
     #     if player in playerdict:
