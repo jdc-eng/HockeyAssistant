@@ -30,8 +30,8 @@ def driversetup():
 
 
 def getlineup(driver, lp, state):
-    # driver.get(lp)  # webpage get request
-    driver.get('https://www.uscho.com/gameday/division-i-men/2021-2022/2022-02-26/game-1697/')
+    driver.get(lp)  # webpage get request
+    # driver.get('https://www.uscho.com/gameday/division-i-men/2021-2022/2022-02-26/game-1697/')
     driver.implicitly_wait(0.5)
 
     # this line finds and clicks on the lines part of the table to turn the aria-hidden to false and we can get the data#
@@ -68,8 +68,8 @@ def getlineup(driver, lp, state):
 
 
 def getroster(driver, rp, Lineup):
-    # driver.get(rp) #get request for the roster webpage
-    driver.get('https://www.eliteprospects.com/team/1551/princeton-univ.'+'?sort=jersey')
+    driver.get(rp+'?sort=jersey') #get request for the roster webpage
+    # driver.get('https://www.eliteprospects.com/team/1551/princeton-univ.'+'?sort=jersey')
     # Select(driver.find_element(By.XPATH, '//*[@id="sidearm-roster-select-template-dropdown"]')).select_by_visible_text('Roster View - List')
     # driver.find_element(By.XPATH, '//*[@id="roster"]/div/div[3]/table/thead/tr/th[2]/a').click() #clicks the number thing to sort by jersey num, really to get everyone in one table
 
@@ -100,6 +100,7 @@ def getroster(driver, rp, Lineup):
                 spot = roster.index(re.sub(r'\s+', ' ', re.sub(r'[^a-zA-Z0-9\s]', '', unidecode.unidecode(skater).lower())))
             except:
                 print("Player not found in roster: " + str(skater))
+                continue
 
             try:
                 hand = ros[spot].contents[19].contents[-1].text.strip()
@@ -122,23 +123,30 @@ def getroster(driver, rp, Lineup):
 
             playerdict[EPname] = skater
             masterdict[skater] = [number, hand, '']
-    print(playerdict)
-
-    driver.get('https://www.eliteprospects.com/team/1551/princeton-univ.' + '?tab=stats#players')
-    stattab = BeautifulSoup(driver.page_source, 'html.parser').find('table', class_='table table-striped table-sortable skater-stats highlight-stats').find_all('tr')  # get table of player stats
-
+    # print(playerdict)
+    # print(masterdict)
+    driver.get(rp+ '?tab=stats#players')
+    # driver.get('https://www.eliteprospects.com/team/1551/princeton-univ.' + '?tab=stats#players')
+    stattab = BeautifulSoup(driver.page_source, 'html.parser').find('table',
+                                                                    class_='table table-striped table-sortable '
+                                                                           'skater-stats '
+                                                                           'highlight-stats').find_all('tr', class_=None)
     for player in stattab[2:]:
-        SiteName = player.contents[5].contents[1].text
-        print(SiteName)
-        if SiteName in playerdict:
-            masterdict[playerdict[SiteName]][2] = player.contents[17].text.strip()
-            print(player.contents[17].text)  # pm location
-            print(player.contents[5].contents[1].text)  # name location
+        sitename = player.contents[5].contents[1].text
+        # print(sitename)
+        if sitename.strip() in playerdict:
+            masterdict[playerdict[sitename.strip()]][2] = player.contents[17].text.strip()
+            # print(player.contents[17].text)  # pm location
+            # print(player.contents[5].contents[1].text)  # name location
+            # print(masterdict[playerdict[sitename.strip()]][2])
+        else:
+            continue
+    # print(masterdict)
+    return masterdict
 
-    return [playerdict, masterdict]
 
-
-def getstats(driver, sp, playerdict, masterdict):
+#below is the old get stats function
+# def getstats(driver, sp, playerdict, masterdict):
     # driver.get(sp) #driver init
     # driver.get()
     # driver.find_element(By.XPATH, '//*[@id="players"]/nav/ul/li[2]/a').click() #click on the individua button for player stats
@@ -157,7 +165,8 @@ def getstats(driver, sp, playerdict, masterdict):
     #         pmin = ptab2.loc[(ptab2['#'] == num[0]).iloc[:, 0]]['Shots']['+/-'].to_numpy()
     #         masterdict[playerdict[num[0]]][2] = pmin # change the plus minus in the master dict to the players plus minus using the number as a key in playerdict to get their name, and pass that into masterdict to add the plus minus of the player
     #         # print(pmin)
-    return masterdict
+    # return masterdict
+
 
 def make_final_df(masterdict, lineup):
     guys = lineup.values.tolist()
@@ -165,7 +174,10 @@ def make_final_df(masterdict, lineup):
     for thing in guys:
         result = [thing[0]]
         for name in thing[1:]:
-            result.append(['', masterdict[name][0], [name, masterdict[name][2]], masterdict[name][1]]) #creates a single players entry into the final df
+            try:
+                result.append(['', masterdict[name][0], [name, masterdict[name][2]], masterdict[name][1]]) #creates a single players entry into the final df
+            except KeyError:
+                continue
         Stuff.append(result)
         Stuff.append(['', '', '', '']) #creates empty columns between the names; for pretty
 
@@ -175,11 +187,12 @@ def make_final_df(masterdict, lineup):
     for column in last.columns[1:]:
         col = pd.DataFrame(last[column].tolist()).explode(2).reset_index(drop=True) # iterates over the three player columns and explodes the name column with the plus minus into new df. this is an entire player column, eg column 2
         final = pd.concat([final, col], axis=1) #concat each of above line to final
-
     return final
+
 
 def export(teamname, final):
     return final.to_csv(path_or_buf=str(teamname) + '.csv', index=False, header=False, ) #export
+
 
 # need to quit the shit
 driversetup().quit()

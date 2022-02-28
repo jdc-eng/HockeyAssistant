@@ -18,15 +18,15 @@ teamname = tk.StringVar()
 #this is used to pass in home or away game into the function. for selecting proper table from lines page
 home = tk.StringVar(value='h').get()
 away = tk.StringVar(value='v').get()
-
+#
 def retrieve(state):
     lp = linespage.get()
     rp = rospage.get()
     sp = statpage.get()
     driver = driversetup()
     lineup = getlineup(driver=driver, lp=lp, state=state)
-    ros = getroster(driver=driver, rp=rp, Lineup=lineup)
-    masterdict = getstats(driver=driver, sp=sp, playerdict=ros[0], masterdict=ros[1])
+    masterdict = getroster(driver=driver, rp=rp, Lineup=lineup)
+    # masterdict = getstats(driver=driver, sp=sp, playerdict=ros[0], masterdict=ros[1])
     final = make_final_df(masterdict=masterdict, lineup=lineup)
     export(teamname=teamname.get(), final=final)
     driversetup().quit()
@@ -39,8 +39,8 @@ lineEntry = ttk.Entry(frm, textvariable=linespage, font=('calibre',10,'normal'))
 Roslabel = ttk.Label(frm, text="Roster Webpage: ").grid(column=0, row=1)
 RosEntry = ttk.Entry(frm, textvariable=rospage, font=('calibre',10,'normal')).grid(column=1, row=1)
 
-StatLabel = ttk.Label(frm, text="Stats Webpage: ").grid(column=0, row=2)
-StatEntry = ttk.Entry(frm, textvariable=statpage, font=('calibre',10,'normal')).grid(column=1, row=2)
+# StatLabel = ttk.Label(frm, text="Stats Webpage: ").grid(column=0, row=2)
+# StatEntry = ttk.Entry(frm, textvariable=statpage, font=('calibre',10,'normal')).grid(column=1, row=2)
 
 TeamL = ttk.Label(frm, text="Team Name: ").grid(column=0, row=3)
 TeamE = ttk.Entry(frm, textvariable= teamname, font=('calibre',10,'normal')).grid(column=1, row=3)
